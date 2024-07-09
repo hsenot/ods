@@ -53,9 +53,12 @@ def get_datasets(endpoint='/datavic/opendata/v1.1/datasets'):
         "apikey": API['KEY']
     }
 
-    page = 0
+    # Caching organisation map to avoid 1 query per dataset
+    orgs = {o.name: o.id for o in Organisation.objects.all()}
+
+    # Pages are 1-indexed
+    page = 1
     while 1:
-        page += 1
         response = requests.get(url, headers=headers, params={'page': page})
         
         if response.status_code == 200:
@@ -64,21 +67,23 @@ def get_datasets(endpoint='/datavic/opendata/v1.1/datasets'):
                 for d in r['datasets']:
                     logger.debug("Processing dataset: %s" % d['name'])
                     if 'id' in d:
-                        try:
-                            obj, created = Dataset.objects.update_or_create(
-                                id=d['id'],
-                                defaults={
-                                    'name': d['name'],
-                                    'title': d['title'],
-                                    'license_title': d.get('license_title'),
-                                    'metadata_created': timezone.make_aware(datetime.fromisoformat(d['metadata_created'])),
-                                    'metadata_modified': timezone.make_aware(datetime.fromisoformat(d['metadata_modified'])),
-                                    'organisation': Organisation.objects.get(name=d['organisation']['name'])
-                                }
-                            )
-                        except KeyError as e:
-                            print(d)
-                            raise
+                        obj, created = Dataset.objects.update_or_create(
+                            id=d['id'],
+                            defaults={
+                                'name': d['name'],
+                                'title': d['title'],
+                                'license_title': d.get('license_title'),
+                                'metadata_created': timezone.make_aware(datetime.fromisoformat(d['metadata_created'])),
+                                'metadata_modified': timezone.make_aware(datetime.fromisoformat(d['metadata_modified'])),
+                                'organisation_id': orgs[d['organisation']['name']]
+                            }
+                        )
+                        # Add tags using the taggit API
+                        obj.tags.set([t.strip().lower() for t in d['tags']], clear=True)
+                        obj.save()
+
+                # Next page please
+                page += 1
             else:
                 print("No more datasets in the page, time to exit")
                 break

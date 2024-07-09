@@ -42,10 +42,49 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Dev-only
+    "debug_toolbar",
+    'taggit',
+    'django_admin_listfilter_dropdown',
     'vicgovau',
 ]
 
+# Create a LOGGING dictionary
+LOGGING = {
+    # Use v1 of the logging config schema
+    'version': 1,
+    # Continue to use existing loggers
+    'disable_existing_loggers': False,
+    # Formatter
+    'formatters': {
+        'verbose': {
+            'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+        },
+    },
+    # Create a log handler that prints logs to the terminal
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    # Define the root logger's settings
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+    # Define the django log module's settings
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': env.str('DJANGO_LOG_LEVEL', 'DEBUG'),
+            'propagate': False,
+        },
+    },
+}
+
 MIDDLEWARE = [
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -131,6 +170,13 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Debug toolbar config
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
+
+# taggit config
+TAGGIT_CASE_INSENSITIVE = True
 
 # APIs config
 APIS = {
