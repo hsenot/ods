@@ -67,6 +67,9 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
+        'null': {
+            'class': 'logging.NullHandler',
+        },
     },
     # Define the root logger's settings
     'root': {
@@ -80,6 +83,11 @@ LOGGING = {
             'level': env.str('DJANGO_LOG_LEVEL', 'DEBUG'),
             'propagate': False,
         },
+        'django.db.backends': {
+            'handlers': ['null'],
+            'level': 'DEBUG',
+            'propagate': False,
+        }
     },
 }
 
