@@ -28,3 +28,18 @@ class Dataset(models.Model):
     metadata_modified = models.DateTimeField(null=False)
     organisation = models.ForeignKey(Organisation, on_delete=models.SET_NULL, null=True)
     tags = TaggableManager(through=GenericStringTaggedItem)
+
+    def __str__(self):
+        return self.name
+
+
+class Resource(models.Model):
+    id = models.CharField(primary_key=True)
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    name = models.CharField(null=False)
+    format = models.CharField(null=False)
+    date_created = models.DateTimeField(null=False)
+    download_link = models.URLField(max_length=2048)
+
+    def __str__(self):
+        return self.name

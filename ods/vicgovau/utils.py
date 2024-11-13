@@ -6,7 +6,7 @@ from datetime import datetime
 from django.conf import settings
 from django.utils import timezone
 
-from .models import Organisation, Dataset
+from .models import Organisation, Dataset, Resource
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +53,9 @@ def get_datasets(endpoint='/datavic/opendata/v1.1/datasets'):
         "apikey": API['KEY']
     }
 
+    # Reload organisations to account for new ones
+    get_organisations()
+
     # Caching organisation map to avoid 1 query per dataset
     orgs = {o.name: o.id for o in Organisation.objects.all()}
 
@@ -78,6 +81,23 @@ def get_datasets(endpoint='/datavic/opendata/v1.1/datasets'):
                                 'organisation_id': orgs[d['organisation']['name']]
                             }
                         )
+
+                        # Upsert associated downloadable resources
+                        if "_embedded" in d and 'resources' in d["_embedded"]:
+                            # Recreate resources to account for deletions in source system
+                            Resource.objects.filter(dataset_id=d['id']).delete()
+
+                            for r in d["_embedded"]["resources"]:
+                                obj2, created2 = Resource.objects.update_or_create(
+                                    id=r['id'],
+                                    defaults={
+                                        'dataset_id': d['id'],
+                                        'name': r['name'],
+                                        'format': r['format'],
+                                        'date_created': timezone.make_aware(datetime.fromisoformat(r['date_created'])),
+                                        'download_link': next((x['href'] for x in r['_links'] if x['rel'] == 'download'), None) if '_links' in r else None
+                                    }
+                                )
                         # Add tags using the taggit API
                         obj.tags.set([t.strip().lower() for t in d['tags']], clear=True)
                         obj.save()
