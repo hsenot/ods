@@ -87,6 +87,11 @@ LOGGING = {
             'handlers': ['null'],
             'level': 'DEBUG',
             'propagate': False,
+        },
+        'django.utils.autoreload':{
+            'handlers': ['null'],
+            'level': 'DEBUG',
+            'propagate': False,
         }
     },
 }
